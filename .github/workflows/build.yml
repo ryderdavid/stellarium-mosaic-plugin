@@ -66,6 +66,12 @@ jobs:
           path: stellarium
           submodules: true
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-qt6-build-${{ steps.version.outputs.STELLARIUM_VERSION }}
+          max-size: 2G
+
       - name: Install Qt6 and dependencies
         run: |
           sudo apt-get update
@@ -73,7 +79,7 @@ jobs:
             qt6-base-dev qt6-multimedia-dev qt6-positioning-dev \
             qt6-tools-dev qt6-tools-dev-tools qt6-serialport-dev \
             qt6-webengine-dev qt6-5compat-dev \
-            libgps-dev gettext cmake ninja-build zlib1g-dev
+            libgps-dev gettext cmake ninja-build zlib1g-dev ccache
 
       - name: Apply patches
         run: |
@@ -83,9 +89,12 @@ jobs:
       - name: Configure CMake
         run: |
           cd stellarium
+          export PATH="/usr/lib/ccache:$PATH"
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DENABLE_TESTING=ON
+            -DENABLE_TESTING=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: |
@@ -120,6 +129,12 @@ jobs:
           path: stellarium
           submodules: true
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: linux-qt5-build-${{ steps.version.outputs.STELLARIUM_VERSION }}
+          max-size: 2G
+
       - name: Install Qt5 and dependencies
         run: |
           sudo apt-get update
@@ -137,9 +152,12 @@ jobs:
       - name: Configure CMake
         run: |
           cd stellarium
+          export PATH="/usr/lib/ccache:$PATH"
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DENABLE_TESTING=ON
+            -DENABLE_TESTING=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: |

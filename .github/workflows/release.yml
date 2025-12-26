@@ -145,6 +145,16 @@ jobs:
             -d Stellarium.app/Contents/Frameworks/ \
             -p @executable_path/../Frameworks/
 
+          # Fix md4c library internal dependencies
+          echo "=== Fixing md4c library paths ==="
+          install_name_tool -change \
+            @rpath/libmd4c.0.dylib \
+            @executable_path/../Frameworks/libmd4c.0.dylib \
+            Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
+
+          echo "=== Verifying md4c-html dependencies ==="
+          otool -L Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
+
           echo "=== Final verification ==="
           echo "Frameworks count:"
           ls -1 Stellarium.app/Contents/Frameworks/ | wc -l

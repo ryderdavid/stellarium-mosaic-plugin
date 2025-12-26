@@ -78,6 +78,7 @@ jobs:
 
       - name: Install Qt6 and dependencies
         run: |
+          sudo add-apt-repository universe
           sudo apt-get update
           sudo apt-get install -y \
             qt6-base-dev qt6-multimedia-dev qt6-positioning-dev \

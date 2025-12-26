@@ -173,23 +173,27 @@ jobs:
         run: |
           cd stellarium
           export Qt6_DIR="$(brew --prefix qt@6)/lib/cmake/Qt6"
-          cmake -B build -G Ninja \
+          cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
-            -DCMAKE_OSX_ARCHITECTURES=arm64
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DENABLE_MACOSX_BUNDLE=ON
           cmake --build build --parallel
 
       - name: Find and Package App Bundle
         run: |
           cd stellarium/build
-          # List directory to debug
-          echo "=== Build directory contents ==="
-          ls -la
-          echo "=== src directory contents ==="
-          ls -la src/ || echo "No src/ directory"
           # Find the app bundle
           APP_PATH=$(find . -name "Stellarium.app" -type d | head -1)
           echo "Found app bundle at: $APP_PATH"
+          if [ -z "$APP_PATH" ]; then
+            echo "ERROR: Stellarium.app not found!"
+            echo "Build directory contents:"
+            ls -la
+            echo "src directory contents:"
+            ls -la src/
+            exit 1
+          fi
           # Package the app bundle
           macdeployqt "$APP_PATH" -dmg
           mv Stellarium.dmg "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg"

@@ -192,9 +192,15 @@ jobs:
           path: stellarium
           submodules: true
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: macos-arm64-build-${{ steps.version.outputs.STELLARIUM_VERSION }}
+          max-size: 2G
+
       - name: Install Qt6 and dependencies
         run: |
-          brew install qt@6 cmake ninja gettext
+          brew install qt@6 cmake ninja gettext ccache
 
       - name: Apply patches
         run: |
@@ -205,10 +211,13 @@ jobs:
         run: |
           cd stellarium
           export Qt6_DIR="$(brew --prefix qt@6)/lib/cmake/Qt6"
+          export PATH="$(brew --prefix ccache)/bin:$PATH"
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
-            -DENABLE_TESTING=ON
+            -DENABLE_TESTING=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: |
@@ -223,7 +232,7 @@ jobs:
 
   build-macos-intel:
     name: Build macOS (Intel)
-    runs-on: macos-13
+    runs-on: macos-15
     needs: validate-patches
     steps:
       - name: Checkout plugin repository
@@ -243,9 +252,15 @@ jobs:
           path: stellarium
           submodules: true
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: macos-intel-build-${{ steps.version.outputs.STELLARIUM_VERSION }}
+          max-size: 2G
+
       - name: Install Qt and dependencies
         run: |
-          brew install qt@6 cmake ninja gettext
+          brew install qt@6 cmake ninja gettext ccache
 
       - name: Apply patches
         run: |
@@ -256,10 +271,13 @@ jobs:
         run: |
           cd stellarium
           export Qt6_DIR="$(brew --prefix qt@6)/lib/cmake/Qt6"
+          export PATH="$(brew --prefix ccache)/bin:$PATH"
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
-            -DENABLE_TESTING=ON
+            -DENABLE_TESTING=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
       - name: Build
         run: |
@@ -295,12 +313,19 @@ jobs:
           path: stellarium
           submodules: true
 
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2
+        with:
+          key: windows-build-${{ steps.version.outputs.STELLARIUM_VERSION }}
+          max-size: 2G
+          variant: sccache
+
       - name: Install Qt6
         uses: jurplel/install-qt-action@v3
         with:
           version: '6.5.*'
           arch: win64_msvc2019_64
-          modules: 'qtmultimedia qtpositioning qtserialport qt5compat'
+          modules: 'qtmultimedia qtpositioning qtserialport qt5compat qtcharts'
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
@@ -317,7 +342,9 @@ jobs:
           cd stellarium
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DENABLE_TESTING=ON
+            -DENABLE_TESTING=ON \
+            -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+            -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
       - name: Build
         shell: bash

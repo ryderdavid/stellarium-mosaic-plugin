@@ -272,8 +272,8 @@ jobs:
           tag_name: ${{ needs.create-release.outputs.version }}
           files: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
 
-  build-windows-zip:
-    name: Build Windows ZIP
+  build-windows-installer:
+    name: Build Windows Installer
     runs-on: windows-latest
     needs: create-release
     permissions:
@@ -314,6 +314,11 @@ jobs:
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1
 
+      - name: Install Inno Setup
+        shell: powershell
+        run: |
+          choco install innosetup -y
+
       - name: Apply patches
         shell: bash
         run: |
@@ -326,32 +331,24 @@ jobs:
           cd stellarium
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${PWD}/build/install" \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build build -j 4
 
-      - name: Package
+      - name: Install and Create Installer
         shell: bash
         run: |
-          cd stellarium/build
-          # List directory to debug
-          echo "=== Build directory contents ==="
-          ls -la
-          echo "=== src directory contents ==="
-          ls -la src/ || echo "No src/ directory"
-          # Create package directory
-          mkdir -p package
-          # With Ninja, exe is in src/ not src/Release/
-          cp stellarium.exe package/ || cp src/stellarium.exe package/ || echo "Could not find stellarium.exe"
-          # Copy Qt dependencies
-          windeployqt package/stellarium.exe
-          # Create zip
-          7z a "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip" package/*
+          cd stellarium
+          # Install to staging directory
+          cmake --install build
+          # Build the Inno Setup installer
+          cmake --build build --target stellarium-installer
 
-      - name: Upload ZIP to Release
+      - name: Upload Installer to Release
         uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.create-release.outputs.version }}
-          files: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip
+          files: stellarium/installers/stellarium-*.exe

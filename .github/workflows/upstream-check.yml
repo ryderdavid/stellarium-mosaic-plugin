@@ -35,6 +35,8 @@ jobs:
           repository: Stellarium/stellarium
           ref: master
           path: stellarium-master
+          fetch-depth: 0
+          fetch-tags: true
 
       - name: Test patches on target version
         id: test-target
@@ -80,7 +82,12 @@ jobs:
         id: check-releases
         run: |
           cd stellarium-master
-          LATEST_TAG=$(git describe --tags --abbrev=0)
+          # Get the latest tag (prefer annotated tags)
+          LATEST_TAG=$(git tag -l --sort=-version:refname 'v*' | head -1)
+          if [ -z "$LATEST_TAG" ]; then
+            echo "Warning: No tags found, using current version"
+            LATEST_TAG="${{ steps.version.outputs.STELLARIUM_VERSION }}"
+          fi
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "current_tag=${{ steps.version.outputs.STELLARIUM_VERSION }}" >> $GITHUB_OUTPUT
 

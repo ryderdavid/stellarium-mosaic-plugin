@@ -318,6 +318,9 @@ jobs:
         shell: powershell
         run: |
           choco install innosetup -y
+          # Add Inno Setup to PATH for subsequent steps
+          $InnoPath = "C:\Program Files (x86)\Inno Setup 6"
+          echo "$InnoPath" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Apply patches
         shell: bash

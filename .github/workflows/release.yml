@@ -99,7 +99,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install qt@6 cmake gettext ccache create-dmg
+          brew install qt@6 cmake gettext ccache create-dmg glm
 
       - name: Apply patches
         run: |

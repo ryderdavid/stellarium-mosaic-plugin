@@ -152,12 +152,15 @@ jobs:
             @executable_path/../Frameworks/libmd4c.0.dylib \
             Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
 
-          # Re-sign the library after modifying it
-          echo "=== Re-signing modified library ==="
-          codesign --force --deep --sign - Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
-
           echo "=== Verifying md4c-html dependencies ==="
           otool -L Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
+
+          # Re-sign the entire app bundle after modifying libraries
+          echo "=== Re-signing entire app bundle ==="
+          codesign --force --deep --sign - Stellarium.app
+
+          echo "=== Verifying app signature ==="
+          codesign --verify --deep --verbose=2 Stellarium.app
 
           echo "=== Final verification ==="
           echo "Frameworks count:"

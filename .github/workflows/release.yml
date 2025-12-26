@@ -155,6 +155,17 @@ jobs:
           echo "=== Verifying md4c-html dependencies ==="
           otool -L Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
 
+          # Fix brotli library internal dependencies
+          echo "=== Fixing brotli library paths ==="
+          if [ -f Stellarium.app/Contents/Frameworks/libbrotlidec.1.dylib ]; then
+            install_name_tool -change \
+              @rpath/libbrotlicommon.1.dylib \
+              @executable_path/../Frameworks/libbrotlicommon.1.dylib \
+              Stellarium.app/Contents/Frameworks/libbrotlidec.1.dylib
+            echo "=== Verifying libbrotlidec dependencies ==="
+            otool -L Stellarium.app/Contents/Frameworks/libbrotlidec.1.dylib
+          fi
+
           # Re-sign the entire app bundle after modifying libraries
           echo "=== Re-signing entire app bundle ==="
           codesign --force --deep --sign - Stellarium.app

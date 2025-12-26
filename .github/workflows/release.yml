@@ -111,7 +111,7 @@ jobs:
           cd stellarium
           export Qt6_DIR="$(brew --prefix qt@6)/lib/cmake/Qt6"
           export PATH="$(brew --prefix ccache)/bin:$PATH"
-          cmake -B build \
+          cmake -B build -G "Unix Makefiles" \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
@@ -119,20 +119,21 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build -j 4
-          cmake --install build --prefix build/install
+          echo "=== Contents of src after build ==="
+          ls -la build/src/
 
       - name: Find and Package App Bundle
         run: |
           cd stellarium/build
-          # Find the app bundle in install directory
-          APP_PATH=$(find install -name "Stellarium.app" -type d | head -1)
+          # Find the app bundle in src directory where it's built
+          APP_PATH=$(find src -name "Stellarium.app" -type d | head -1)
           echo "Found app bundle at: $APP_PATH"
           if [ -z "$APP_PATH" ]; then
             echo "ERROR: Stellarium.app not found!"
-            echo "Install directory contents:"
-            ls -la install/ || echo "No install directory"
-            echo "Build directory contents:"
-            ls -la
+            echo "src directory contents:"
+            ls -la src/
+            echo "Searching entire build directory:"
+            find . -name "*.app" -type d || echo "No .app bundles found"
             exit 1
           fi
           # Package the app bundle

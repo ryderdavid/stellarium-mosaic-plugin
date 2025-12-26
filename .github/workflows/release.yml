@@ -179,11 +179,19 @@ jobs:
             -DCMAKE_OSX_ARCHITECTURES=arm64
           cmake --build build --parallel
 
-      - name: Create DMG
+      - name: Find and Package App Bundle
         run: |
           cd stellarium/build
-          # Package the app bundle (app is in src/ subdirectory)
-          macdeployqt src/Stellarium.app -dmg
+          # List directory to debug
+          echo "=== Build directory contents ==="
+          ls -la
+          echo "=== src directory contents ==="
+          ls -la src/ || echo "No src/ directory"
+          # Find the app bundle
+          APP_PATH=$(find . -name "Stellarium.app" -type d | head -1)
+          echo "Found app bundle at: $APP_PATH"
+          # Package the app bundle
+          macdeployqt "$APP_PATH" -dmg
           mv Stellarium.dmg "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg"
 
       - name: Upload DMG to Release
@@ -247,9 +255,15 @@ jobs:
         shell: bash
         run: |
           cd stellarium/build
+          # List directory to debug
+          echo "=== Build directory contents ==="
+          ls -la
+          echo "=== src directory contents ==="
+          ls -la src/ || echo "No src/ directory"
           # Create package directory
           mkdir -p package
-          cp -r src/Release/stellarium.exe package/
+          # With Ninja, exe is in src/ not src/Release/
+          cp stellarium.exe package/ || cp src/stellarium.exe package/ || echo "Could not find stellarium.exe"
           # Copy Qt dependencies
           windeployqt package/stellarium.exe
           # Create zip

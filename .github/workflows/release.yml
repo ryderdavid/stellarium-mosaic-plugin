@@ -119,19 +119,20 @@ jobs:
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build -j 4
+          cmake --install build --prefix build/install
 
       - name: Find and Package App Bundle
         run: |
           cd stellarium/build
-          # Find the app bundle
-          APP_PATH=$(find . -name "Stellarium.app" -type d | head -1)
+          # Find the app bundle in install directory
+          APP_PATH=$(find install -name "Stellarium.app" -type d | head -1)
           echo "Found app bundle at: $APP_PATH"
           if [ -z "$APP_PATH" ]; then
             echo "ERROR: Stellarium.app not found!"
+            echo "Install directory contents:"
+            ls -la install/ || echo "No install directory"
             echo "Build directory contents:"
             ls -la
-            echo "src directory contents:"
-            ls -la src/
             exit 1
           fi
           # Package the app bundle

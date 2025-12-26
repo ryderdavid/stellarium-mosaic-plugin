@@ -149,27 +149,84 @@ jobs:
           echo "=== Fixing all @rpath references in bundled libraries ==="
           FRAMEWORKS_DIR="Stellarium.app/Contents/Frameworks"
           FIXED_COUNT=0
+          COPIED_COUNT=0
 
-          # Find all .dylib files in Frameworks directory
+          # Iteratively find and copy missing libraries (may have transitive dependencies)
+          MAX_ITERATIONS=5
+          for iteration in $(seq 1 $MAX_ITERATIONS); do
+            echo "=== Iteration $iteration: Scanning for missing libraries ==="
+            MISSING_LIBS=""
+
+            # Find all .dylib files and check their @rpath dependencies
+            find "$FRAMEWORKS_DIR" -name "*.dylib" -type f | while read -r lib; do
+              RPATH_DEPS=$(otool -L "$lib" | grep '@rpath/' | awk '{print $1}')
+
+              if [ -n "$RPATH_DEPS" ]; then
+                echo "$RPATH_DEPS" | while read -r dep; do
+                  LIB_NAME=$(basename "$dep")
+
+                  # If library not in Frameworks, add to missing list
+                  if [ ! -f "$FRAMEWORKS_DIR/$LIB_NAME" ]; then
+                    echo "$LIB_NAME" >> /tmp/missing_libs.txt
+                  fi
+                done
+              fi
+            done
+
+            # Get unique list of missing libraries
+            if [ -f /tmp/missing_libs.txt ]; then
+              MISSING_LIBS=$(sort -u /tmp/missing_libs.txt)
+              rm /tmp/missing_libs.txt
+            fi
+
+            if [ -z "$MISSING_LIBS" ]; then
+              echo "No missing libraries found"
+              break
+            fi
+
+            # Try to find and copy missing libraries from Homebrew
+            echo "Missing libraries to copy:"
+            echo "$MISSING_LIBS"
+
+            while IFS= read -r lib_name; do
+              # Search common Homebrew locations
+              FOUND_PATH=""
+              for search_path in /opt/homebrew/lib /opt/homebrew/opt/*/lib /usr/local/lib /usr/local/opt/*/lib; do
+                if [ -f "$search_path/$lib_name" ]; then
+                  FOUND_PATH="$search_path/$lib_name"
+                  break
+                fi
+              done
+
+              if [ -n "$FOUND_PATH" ]; then
+                echo "  Copying: $FOUND_PATH -> $FRAMEWORKS_DIR/$lib_name"
+                cp "$FOUND_PATH" "$FRAMEWORKS_DIR/"
+                COPIED_COUNT=$((COPIED_COUNT + 1))
+              else
+                echo "  Warning: Could not find $lib_name in Homebrew paths"
+              fi
+            done <<< "$MISSING_LIBS"
+          done
+
+          echo "=== Copied $COPIED_COUNT missing libraries ==="
+
+          # Now fix all @rpath references
+          echo "=== Fixing @rpath references ==="
           find "$FRAMEWORKS_DIR" -name "*.dylib" -type f | while read -r lib; do
-            # Get all dependencies of this library
             RPATH_DEPS=$(otool -L "$lib" | grep '@rpath/' | awk '{print $1}')
 
             if [ -n "$RPATH_DEPS" ]; then
               echo "Checking $lib for @rpath dependencies..."
 
-              # For each @rpath dependency
               echo "$RPATH_DEPS" | while read -r dep; do
-                # Extract just the library name (e.g., libmd4c.0.dylib from @rpath/libmd4c.0.dylib)
                 LIB_NAME=$(basename "$dep")
 
-                # Check if this library exists in our Frameworks directory
                 if [ -f "$FRAMEWORKS_DIR/$LIB_NAME" ]; then
                   echo "  Fixing: $dep -> @executable_path/../Frameworks/$LIB_NAME"
                   install_name_tool -change "$dep" "@executable_path/../Frameworks/$LIB_NAME" "$lib"
                   FIXED_COUNT=$((FIXED_COUNT + 1))
                 else
-                  echo "  Warning: $LIB_NAME referenced but not found in Frameworks"
+                  echo "  Warning: $LIB_NAME still not found after copying"
                 fi
               done
             fi

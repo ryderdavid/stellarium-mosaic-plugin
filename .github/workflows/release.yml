@@ -131,9 +131,9 @@ jobs:
           # Create Frameworks directory if it doesn't exist
           mkdir -p Stellarium.app/Contents/Frameworks
 
-          # Use dylibbundler to automatically find and bundle all non-system dependencies
-          echo "=== Running dylibbundler ==="
-          dylibbundler -od -b \
+          # Use dylibbundler to bundle non-Qt dependencies (macdeployqt already handled Qt)
+          echo "=== Running dylibbundler to bundle remaining dependencies ==="
+          dylibbundler -b \
             -x Stellarium.app/Contents/MacOS/stellarium \
             -d Stellarium.app/Contents/Frameworks/ \
             -p @executable_path/../Frameworks/

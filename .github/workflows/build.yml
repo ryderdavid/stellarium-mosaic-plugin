@@ -127,7 +127,7 @@ jobs:
             qtbase5-dev qtscript5-dev libqt5svg5-dev qttools5-dev-tools \
             qttools5-dev libqt5opengl5-dev qtmultimedia5-dev \
             libqt5multimedia5-plugins libqt5serialport5-dev \
-            qtpositioning5-dev libgps-dev gettext cmake ninja-build zlib1g-dev
+            qtpositioning5-dev libgps-dev gettext cmake ninja-build zlib1g-dev ccache
 
       - name: Apply patches
         run: |

@@ -99,7 +99,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          brew install qt@6 cmake gettext ccache create-dmg glm
+          brew install qt@6 cmake gettext ccache create-dmg glm dylibbundler
 
       - name: Apply patches
         run: |
@@ -131,37 +131,18 @@ jobs:
           # Create Frameworks directory if it doesn't exist
           mkdir -p Stellarium.app/Contents/Frameworks
 
-          # Find and copy md4c library
-          MD4C_PREFIX=$(brew --prefix md4c)
-          MD4C_LIB="$MD4C_PREFIX/lib/libmd4c-html.0.dylib"
+          # Use dylibbundler to automatically find and bundle all non-system dependencies
+          echo "=== Running dylibbundler ==="
+          dylibbundler -od -b \
+            -x Stellarium.app/Contents/MacOS/stellarium \
+            -d Stellarium.app/Contents/Frameworks/ \
+            -p @executable_path/../Frameworks/
 
-          if [ ! -f "$MD4C_LIB" ]; then
-            echo "ERROR: md4c library not found at $MD4C_LIB"
-            exit 1
-          fi
-
-          cp "$MD4C_LIB" Stellarium.app/Contents/Frameworks/
-
-          # Get the actual library path from otool
-          OLD_PATH=$(otool -L Stellarium.app/Contents/MacOS/stellarium | grep libmd4c-html | awk '{print $1}')
-          echo "Old md4c path: $OLD_PATH"
-
-          # Fix the library path in the main executable
-          install_name_tool -change \
-            "$OLD_PATH" \
-            "@executable_path/../Frameworks/libmd4c-html.0.dylib" \
-            Stellarium.app/Contents/MacOS/stellarium
-
-          # Fix the library's own install name
-          install_name_tool -id \
-            "@executable_path/../Frameworks/libmd4c-html.0.dylib" \
-            Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
-
-          echo "=== After fixing ==="
+          echo "=== After bundling ==="
           echo "Frameworks contents:"
-          ls -la Stellarium.app/Contents/Frameworks/ | grep md4c
+          ls -la Stellarium.app/Contents/Frameworks/
           echo "Updated dependencies:"
-          otool -L Stellarium.app/Contents/MacOS/stellarium | grep md4c
+          otool -L Stellarium.app/Contents/MacOS/stellarium
 
       - name: Create DMG
         run: |

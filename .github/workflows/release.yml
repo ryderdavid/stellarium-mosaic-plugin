@@ -13,7 +13,6 @@ jobs:
     permissions:
       contents: write
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Checkout
@@ -29,14 +28,17 @@ jobs:
           fi
           echo "version=$VERSION" >> $GITHUB_OUTPUT
 
+      - name: Read Stellarium version
+        id: stellarium_version
+        run: echo "stellarium_version=$(cat config/stellarium-version.txt)" >> $GITHUB_OUTPUT
+
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ steps.get_version.outputs.version }}
-          release_name: Stellarium Mosaic Plugin ${{ steps.get_version.outputs.version }}
+          name: Stellarium Mosaic Plugin ${{ steps.get_version.outputs.version }}
           draft: false
           prerelease: false
           body: |
@@ -44,7 +46,7 @@ jobs:
 
             This release includes Stellarium with the integrated Mosaic Planning plugin.
 
-            **Stellarium Base Version:** $(cat config/stellarium-version.txt)
+            **Stellarium Base Version:** ${{ steps.stellarium_version.outputs.stellarium_version }}
             **Plugin Version:** ${{ steps.get_version.outputs.version }}
 
             ### Features
@@ -126,15 +128,13 @@ jobs:
           export OUTPUT="Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage"
           ../linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
 
-      - name: Upload AppImage
-        uses: actions/upload-release-asset@v1
+      - name: Upload AppImage to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: stellarium/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage
-          asset_name: Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage
-          asset_content_type: application/octet-stream
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: stellarium/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage
 
   build-macos-dmg:
     name: Build macOS DMG
@@ -186,15 +186,13 @@ jobs:
           macdeployqt Stellarium.app -dmg
           mv Stellarium.dmg "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg"
 
-      - name: Upload DMG
-        uses: actions/upload-release-asset@v1
+      - name: Upload DMG to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
-          asset_name: Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
-          asset_content_type: application/octet-stream
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
 
   build-windows-zip:
     name: Build Windows ZIP
@@ -257,12 +255,10 @@ jobs:
           # Create zip
           7z a "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip" package/*
 
-      - name: Upload ZIP
-        uses: actions/upload-release-asset@v1
+      - name: Upload ZIP to Release
+        uses: softprops/action-gh-release@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip
-          asset_name: Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip
-          asset_content_type: application/zip
+          tag_name: ${{ needs.create-release.outputs.version }}
+          files: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip

@@ -119,8 +119,49 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build build -j 4
           cmake --install build
-          echo "=== Verifying Stellarium.app was created ==="
-          ls -la build/Stellarium.app
+
+      - name: Bundle third-party libraries
+        run: |
+          cd stellarium/build
+
+          # Check what libraries the executable depends on
+          echo "=== Current library dependencies ==="
+          otool -L Stellarium.app/Contents/MacOS/stellarium | grep -v "Stellarium.app"
+
+          # Create Frameworks directory if it doesn't exist
+          mkdir -p Stellarium.app/Contents/Frameworks
+
+          # Find and copy md4c library
+          MD4C_PREFIX=$(brew --prefix md4c)
+          MD4C_LIB="$MD4C_PREFIX/lib/libmd4c-html.0.dylib"
+
+          if [ ! -f "$MD4C_LIB" ]; then
+            echo "ERROR: md4c library not found at $MD4C_LIB"
+            exit 1
+          fi
+
+          cp "$MD4C_LIB" Stellarium.app/Contents/Frameworks/
+
+          # Get the actual library path from otool
+          OLD_PATH=$(otool -L Stellarium.app/Contents/MacOS/stellarium | grep libmd4c-html | awk '{print $1}')
+          echo "Old md4c path: $OLD_PATH"
+
+          # Fix the library path in the main executable
+          install_name_tool -change \
+            "$OLD_PATH" \
+            "@executable_path/../Frameworks/libmd4c-html.0.dylib" \
+            Stellarium.app/Contents/MacOS/stellarium
+
+          # Fix the library's own install name
+          install_name_tool -id \
+            "@executable_path/../Frameworks/libmd4c-html.0.dylib" \
+            Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
+
+          echo "=== After fixing ==="
+          echo "Frameworks contents:"
+          ls -la Stellarium.app/Contents/Frameworks/ | grep md4c
+          echo "Updated dependencies:"
+          otool -L Stellarium.app/Contents/MacOS/stellarium | grep md4c
 
       - name: Create DMG
         run: |

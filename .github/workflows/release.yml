@@ -145,26 +145,37 @@ jobs:
             -d Stellarium.app/Contents/Frameworks/ \
             -p @executable_path/../Frameworks/
 
-          # Fix md4c library internal dependencies
-          echo "=== Fixing md4c library paths ==="
-          install_name_tool -change \
-            @rpath/libmd4c.0.dylib \
-            @executable_path/../Frameworks/libmd4c.0.dylib \
-            Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
+          # Fix all @rpath references in bundled libraries
+          echo "=== Fixing all @rpath references in bundled libraries ==="
+          FRAMEWORKS_DIR="Stellarium.app/Contents/Frameworks"
+          FIXED_COUNT=0
 
-          echo "=== Verifying md4c-html dependencies ==="
-          otool -L Stellarium.app/Contents/Frameworks/libmd4c-html.0.dylib
+          # Find all .dylib files in Frameworks directory
+          find "$FRAMEWORKS_DIR" -name "*.dylib" -type f | while read -r lib; do
+            # Get all dependencies of this library
+            RPATH_DEPS=$(otool -L "$lib" | grep '@rpath/' | awk '{print $1}')
 
-          # Fix brotli library internal dependencies
-          echo "=== Fixing brotli library paths ==="
-          if [ -f Stellarium.app/Contents/Frameworks/libbrotlidec.1.dylib ]; then
-            install_name_tool -change \
-              @rpath/libbrotlicommon.1.dylib \
-              @executable_path/../Frameworks/libbrotlicommon.1.dylib \
-              Stellarium.app/Contents/Frameworks/libbrotlidec.1.dylib
-            echo "=== Verifying libbrotlidec dependencies ==="
-            otool -L Stellarium.app/Contents/Frameworks/libbrotlidec.1.dylib
-          fi
+            if [ -n "$RPATH_DEPS" ]; then
+              echo "Checking $lib for @rpath dependencies..."
+
+              # For each @rpath dependency
+              echo "$RPATH_DEPS" | while read -r dep; do
+                # Extract just the library name (e.g., libmd4c.0.dylib from @rpath/libmd4c.0.dylib)
+                LIB_NAME=$(basename "$dep")
+
+                # Check if this library exists in our Frameworks directory
+                if [ -f "$FRAMEWORKS_DIR/$LIB_NAME" ]; then
+                  echo "  Fixing: $dep -> @executable_path/../Frameworks/$LIB_NAME"
+                  install_name_tool -change "$dep" "@executable_path/../Frameworks/$LIB_NAME" "$lib"
+                  FIXED_COUNT=$((FIXED_COUNT + 1))
+                else
+                  echo "  Warning: $LIB_NAME referenced but not found in Frameworks"
+                fi
+              done
+            fi
+          done
+
+          echo "=== Fixed $FIXED_COUNT @rpath references ==="
 
           # Re-sign the entire app bundle after modifying libraries
           echo "=== Re-signing entire app bundle ==="

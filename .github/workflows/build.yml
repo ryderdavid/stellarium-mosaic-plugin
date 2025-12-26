@@ -100,7 +100,7 @@ jobs:
       - name: Build
         run: |
           cd stellarium
-          cmake --build build --parallel
+          cmake --build build -j 4
 
   build-windows:
     name: Build Windows (Qt6)
@@ -162,4 +162,4 @@ jobs:
         shell: bash
         run: |
           cd stellarium
-          cmake --build build --parallel
+          cmake --build build -j 4

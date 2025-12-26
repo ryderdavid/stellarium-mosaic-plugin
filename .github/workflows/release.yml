@@ -118,7 +118,7 @@ jobs:
             -DENABLE_MACOSX_BUNDLE=ON \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build --parallel
+          cmake --build build -j 4
 
       - name: Find and Package App Bundle
         run: |
@@ -202,7 +202,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-          cmake --build build --parallel
+          cmake --build build -j 4
 
       - name: Package
         shell: bash

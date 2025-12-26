@@ -129,13 +129,17 @@ jobs:
           echo "Built patched binary:"
           ls -lh build/src/stellarium
 
-      - name: Replace binary and bundle additional dependencies
+      - name: Replace binary and fix paths
         run: |
           cd stellarium
 
           # Replace the official binary with our patched one
           echo "=== Replacing binary with patched version ==="
           cp build/src/stellarium Stellarium.app/Contents/MacOS/stellarium
+
+          # Use macdeployqt to fix all Qt paths in the binary (frameworks already exist from official build)
+          echo "=== Fixing Qt framework paths with macdeployqt ==="
+          macdeployqt Stellarium.app -verbose=1
 
           # Bundle only the additional non-Qt dependencies (like md4c)
           echo "=== Bundling additional dependencies ==="
@@ -149,8 +153,8 @@ jobs:
           ls -1 Stellarium.app/Contents/Frameworks/ | wc -l
           echo "Checking for md4c:"
           ls -1 Stellarium.app/Contents/Frameworks/ | grep md4c || echo "md4c not found"
-          echo "=== Binary dependencies ==="
-          otool -L Stellarium.app/Contents/MacOS/stellarium | grep -E "md4c|QtWebEngine|QtCore" | head -10
+          echo "=== Binary dependencies (should ALL use @executable_path or @rpath) ==="
+          otool -L Stellarium.app/Contents/MacOS/stellarium | grep -v "/System/" | grep -v "/usr/lib/"
 
       - name: Create DMG
         run: |

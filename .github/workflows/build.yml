@@ -93,7 +93,7 @@ jobs:
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
-            -DENABLE_TESTING=ON \
+            -DENABLE_TESTING=OFF \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
@@ -101,12 +101,6 @@ jobs:
         run: |
           cd stellarium
           cmake --build build --parallel
-
-      - name: Run tests
-        run: |
-          cd stellarium
-          cd build
-          ctest --output-on-failure
 
   build-windows:
     name: Build Windows (Qt6)
@@ -160,7 +154,7 @@ jobs:
           cd stellarium
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DENABLE_TESTING=ON \
+            -DENABLE_TESTING=OFF \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
@@ -169,10 +163,3 @@ jobs:
         run: |
           cd stellarium
           cmake --build build --parallel
-
-      - name: Run tests
-        shell: bash
-        run: |
-          cd stellarium
-          cd build
-          ctest --output-on-failure

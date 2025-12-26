@@ -120,29 +120,35 @@ jobs:
           cmake --build build -j 4
           cmake --install build
 
-      - name: Bundle third-party libraries
+      - name: Bundle all dependencies
         run: |
           cd stellarium/build
 
-          # Check what libraries the executable depends on
-          echo "=== Current library dependencies ==="
+          # Check what libraries the executable depends on before bundling
+          echo "=== Initial library dependencies ==="
           otool -L Stellarium.app/Contents/MacOS/stellarium | grep -v "Stellarium.app"
 
-          # Create Frameworks directory if it doesn't exist
-          mkdir -p Stellarium.app/Contents/Frameworks
+          # Run macdeployqt to bundle Qt frameworks
+          echo "=== Running macdeployqt to bundle Qt frameworks ==="
+          macdeployqt Stellarium.app -verbose=2
 
-          # Use dylibbundler to bundle non-Qt dependencies (macdeployqt already handled Qt)
-          echo "=== Running dylibbundler to bundle remaining dependencies ==="
+          echo "=== After macdeployqt ==="
+          ls -la Stellarium.app/Contents/Frameworks/ | head -20
+
+          # Use dylibbundler to bundle remaining non-Qt dependencies (like md4c)
+          echo "=== Running dylibbundler for non-Qt dependencies ==="
           dylibbundler -b \
             -x Stellarium.app/Contents/MacOS/stellarium \
             -d Stellarium.app/Contents/Frameworks/ \
             -p @executable_path/../Frameworks/
 
-          echo "=== After bundling ==="
-          echo "Frameworks contents:"
-          ls -la Stellarium.app/Contents/Frameworks/
-          echo "Updated dependencies:"
-          otool -L Stellarium.app/Contents/MacOS/stellarium
+          echo "=== Final bundle contents ==="
+          echo "Frameworks count:"
+          ls -1 Stellarium.app/Contents/Frameworks/ | wc -l
+          echo "Sample frameworks:"
+          ls -1 Stellarium.app/Contents/Frameworks/ | head -20
+          echo "=== Final dependencies ==="
+          otool -L Stellarium.app/Contents/MacOS/stellarium | head -40
 
       - name: Create DMG
         run: |

@@ -1,0 +1,33 @@
+diff --git a/plugins/Oculars/src/gui/OcularsGuiPanel.hpp b/plugins/Oculars/src/gui/OcularsGuiPanel.hpp
+index 54e0501d93..feb88833cb 100644
+--- a/plugins/Oculars/src/gui/OcularsGuiPanel.hpp
++++ b/plugins/Oculars/src/gui/OcularsGuiPanel.hpp
+@@ -63,6 +63,8 @@ private slots:
+ 	void updateLensControls();
+ 	//! Updates the information shown when an ocular overlay is displayed
+ 	void updateOcularControls();
++	//! Updates the mosaic controls
++	void updateMosaicControls();
+ 	//! Updates the information that depends on the current telescope.
+ 	//! Called in both updateOcularControls() and updateCcdControls().
+ 	void updateTelescopeControls();
+@@ -153,6 +155,19 @@ private:
+ 	StelButton* rotatePrismPlus15Button = nullptr;
+ 	StelButton* rotatePrismPlus90Button = nullptr;
+ 
++	//Mosaic controls
++	QGraphicsTextItem* fieldMosaicMode;
++	QGraphicsTextItem* fieldMosaicPanelsX;
++	QGraphicsTextItem* fieldMosaicPanelsY;
++	QGraphicsTextItem* fieldMosaicOverlap;
++	StelButton* prevMosaicPanelsXButton;
++	StelButton* nextMosaicPanelsXButton;
++	StelButton* prevMosaicPanelsYButton;
++	StelButton* nextMosaicPanelsYButton;
++	StelButton* prevMosaicOverlapButton;
++	StelButton* nextMosaicOverlapButton;
++	StelButton* toggleMosaicModeButton;
++
+ 	//! Sets the visibility of the ocular name label and the associated buttons.
+ 	void setOcularControlsVisible(bool show);
+ 	void setCcdControlsVisible(bool show);

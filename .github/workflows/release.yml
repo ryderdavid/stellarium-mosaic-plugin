@@ -1,0 +1,268 @@
+name: Release Build
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      version: ${{ steps.get_version.outputs.version }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [[ $GITHUB_REF == refs/tags/* ]]; then
+            VERSION=${GITHUB_REF#refs/tags/}
+          else
+            VERSION="manual-$(date +%Y%m%d-%H%M%S)"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          release_name: Stellarium Mosaic Plugin ${{ steps.get_version.outputs.version }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Stellarium with Mosaic Planning Plugin
+
+            This release includes Stellarium with the integrated Mosaic Planning plugin.
+
+            **Stellarium Base Version:** $(cat config/stellarium-version.txt)
+            **Plugin Version:** ${{ steps.get_version.outputs.version }}
+
+            ### Features
+            - Mosaic planning capabilities integrated into Oculars plugin
+            - Configurable N×M panel layouts
+            - Adjustable overlap percentage
+            - Rotatable mosaic grids
+            - Real-time visualization
+
+            ### Downloads
+            - **Linux:** AppImage (x86_64)
+            - **macOS:** DMG (Apple Silicon arm64)
+            - **Windows:** ZIP archive (x64)
+
+            ### Installation
+            See README.md for installation instructions.
+
+  build-linux-appimage:
+    name: Build Linux AppImage
+    runs-on: ubuntu-20.04
+    needs: create-release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout plugin repository
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Read Stellarium version
+        id: version
+        run: echo "STELLARIUM_VERSION=$(cat plugin/config/stellarium-version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Checkout Stellarium
+        uses: actions/checkout@v4
+        with:
+          repository: Stellarium/stellarium
+          ref: ${{ steps.version.outputs.STELLARIUM_VERSION }}
+          path: stellarium
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            qtbase5-dev qtscript5-dev libqt5svg5-dev qttools5-dev-tools \
+            qttools5-dev libqt5opengl5-dev qtmultimedia5-dev \
+            libqt5multimedia5-plugins libqt5serialport5-dev \
+            qtpositioning5-dev libgps-dev gettext cmake ninja-build \
+            zlib1g-dev wget file
+
+      - name: Apply patches
+        run: |
+          cd stellarium
+          bash ../plugin/scripts/apply-patches.sh .
+
+      - name: Configure and Build
+        run: |
+          cd stellarium
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX=/usr
+          cmake --build build --parallel
+
+      - name: Install to AppDir
+        run: |
+          cd stellarium
+          DESTDIR=AppDir cmake --install build
+
+      - name: Download linuxdeploy
+        run: |
+          wget https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy*.AppImage
+
+      - name: Create AppImage
+        run: |
+          cd stellarium
+          export OUTPUT="Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage"
+          ../linuxdeploy-x86_64.AppImage --appdir AppDir --plugin qt --output appimage
+
+      - name: Upload AppImage
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: stellarium/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage
+          asset_name: Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-x86_64.AppImage
+          asset_content_type: application/octet-stream
+
+  build-macos-dmg:
+    name: Build macOS DMG
+    runs-on: macos-14
+    needs: create-release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout plugin repository
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Read Stellarium version
+        id: version
+        run: echo "STELLARIUM_VERSION=$(cat plugin/config/stellarium-version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Checkout Stellarium
+        uses: actions/checkout@v4
+        with:
+          repository: Stellarium/stellarium
+          ref: ${{ steps.version.outputs.STELLARIUM_VERSION }}
+          path: stellarium
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          brew install qt@6 cmake ninja gettext create-dmg
+
+      - name: Apply patches
+        run: |
+          cd stellarium
+          bash ../plugin/scripts/apply-patches.sh .
+
+      - name: Configure and Build
+        run: |
+          cd stellarium
+          export Qt6_DIR="$(brew --prefix qt@6)/lib/cmake/Qt6"
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
+          cmake --build build --parallel
+
+      - name: Create DMG
+        run: |
+          cd stellarium/build
+          # Package the app bundle
+          macdeployqt Stellarium.app -dmg
+          mv Stellarium.dmg "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg"
+
+      - name: Upload DMG
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
+          asset_name: Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
+          asset_content_type: application/octet-stream
+
+  build-windows-zip:
+    name: Build Windows ZIP
+    runs-on: windows-latest
+    needs: create-release
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout plugin repository
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Read Stellarium version
+        id: version
+        shell: bash
+        run: echo "STELLARIUM_VERSION=$(cat plugin/config/stellarium-version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Checkout Stellarium
+        uses: actions/checkout@v4
+        with:
+          repository: Stellarium/stellarium
+          ref: ${{ steps.version.outputs.STELLARIUM_VERSION }}
+          path: stellarium
+          submodules: true
+
+      - name: Install Qt6
+        uses: jurplel/install-qt-action@v3
+        with:
+          version: '6.5.*'
+          arch: win64_msvc2019_64
+          modules: 'qtmultimedia qtpositioning qtserialport qt5compat'
+
+      - name: Setup MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+
+      - name: Apply patches
+        shell: bash
+        run: |
+          cd stellarium
+          bash ../plugin/scripts/apply-patches.sh .
+
+      - name: Configure and Build
+        shell: bash
+        run: |
+          cd stellarium
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --parallel
+
+      - name: Package
+        shell: bash
+        run: |
+          cd stellarium/build
+          # Create package directory
+          mkdir -p package
+          cp -r src/Release/stellarium.exe package/
+          # Copy Qt dependencies
+          windeployqt package/stellarium.exe
+          # Create zip
+          7z a "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip" package/*
+
+      - name: Upload ZIP
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ needs.create-release.outputs.upload_url }}
+          asset_path: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip
+          asset_name: Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-win64.zip
+          asset_content_type: application/zip

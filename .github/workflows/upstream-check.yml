@@ -1,0 +1,248 @@
+name: Check Upstream Drift
+
+on:
+  schedule:
+    # Run daily at 6:00 AM UTC
+    - cron: '0 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check-patches:
+    name: Check Patches Against Upstream
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Checkout plugin repository
+        uses: actions/checkout@v4
+        with:
+          path: plugin
+
+      - name: Read Stellarium version
+        id: version
+        run: echo "STELLARIUM_VERSION=$(cat plugin/config/stellarium-version.txt)" >> $GITHUB_OUTPUT
+
+      - name: Checkout Stellarium at target version
+        uses: actions/checkout@v4
+        with:
+          repository: Stellarium/stellarium
+          ref: ${{ steps.version.outputs.STELLARIUM_VERSION }}
+          path: stellarium-target
+
+      - name: Checkout Stellarium master
+        uses: actions/checkout@v4
+        with:
+          repository: Stellarium/stellarium
+          ref: master
+          path: stellarium-master
+
+      - name: Test patches on target version
+        id: test-target
+        run: |
+          cd stellarium-target
+          FAILED=0
+          for patch in ../plugin/patches/*.patch; do
+            if [ ! -s "$patch" ]; then
+              continue
+            fi
+            echo "Testing $(basename $patch) on ${{ steps.version.outputs.STELLARIUM_VERSION }}..."
+            if ! git apply --check "$patch" 2>&1; then
+              echo "FAILED: $(basename $patch)"
+              FAILED=1
+            fi
+          done
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+
+      - name: Test patches on master
+        id: test-master
+        run: |
+          cd stellarium-master
+          FAILED=0
+          FAILED_PATCHES=""
+          for patch in ../plugin/patches/*.patch; do
+            if [ ! -s "$patch" ]; then
+              continue
+            fi
+            PATCH_NAME=$(basename "$patch")
+            echo "Testing $PATCH_NAME on master..."
+            if ! git apply --check "$patch" 2>&1; then
+              echo "FAILED: $PATCH_NAME"
+              FAILED=1
+              FAILED_PATCHES="$FAILED_PATCHES\n- $PATCH_NAME"
+            fi
+          done
+          echo "failed=$FAILED" >> $GITHUB_OUTPUT
+          echo "failed_patches<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$FAILED_PATCHES" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Check for new releases
+        id: check-releases
+        run: |
+          cd stellarium-master
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+          echo "current_tag=${{ steps.version.outputs.STELLARIUM_VERSION }}" >> $GITHUB_OUTPUT
+
+          if [ "$LATEST_TAG" != "${{ steps.version.outputs.STELLARIUM_VERSION }}" ]; then
+            echo "new_release=true" >> $GITHUB_OUTPUT
+          else
+            echo "new_release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create issue for patch failures on target
+        if: steps.test-target.outputs.failed == '1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '⚠️ Patches failing on target version ${{ steps.version.outputs.STELLARIUM_VERSION }}';
+            const body = `The patches are failing to apply to the configured target version \`${{ steps.version.outputs.STELLARIUM_VERSION }}\`.
+
+            This is a critical issue that needs immediate attention.
+
+            **Action Required:**
+            1. Review the patches and ensure they are compatible with the target version
+            2. Run \`scripts/generate-patches.sh\` to regenerate patches if needed
+            3. Update patches manually if necessary
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['upstream-drift', 'critical']
+            });
+
+            const existingIssue = issues.data.find(issue => issue.title === title);
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['upstream-drift', 'critical']
+              });
+            }
+
+      - name: Create issue for patch failures on master
+        if: steps.test-master.outputs.failed == '1'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🔄 Patches failing on upstream master';
+            const body = `Some patches are failing to apply to upstream master branch.
+
+            **Failed Patches:**
+            ${{ steps.test-master.outputs.failed_patches }}
+
+            **Current Target:** \`${{ steps.version.outputs.STELLARIUM_VERSION }}\`
+            **Upstream Master:** Latest
+
+            This indicates that upstream has made changes to files we're patching. This may require updating our patches when we upgrade to a newer version.
+
+            **Action Required:**
+            - Monitor this issue when planning version upgrades
+            - Review affected patches before upgrading target version
+            - Test patch regeneration against newer upstream versions
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+
+            // Check if issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['upstream-drift']
+            });
+
+            const existingIssue = issues.data.find(issue => issue.title === title);
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['upstream-drift', 'enhancement']
+              });
+            } else {
+              // Update existing issue with latest info
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `**Update:** Patches still failing as of ${new Date().toISOString()}\n\n**Failed Patches:**\n${{ steps.test-master.outputs.failed_patches }}\n\n**Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+              });
+            }
+
+      - name: Create issue for new release
+        if: steps.check-releases.outputs.new_release == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = '🚀 New Stellarium release available: ${{ steps.check-releases.outputs.latest_tag }}';
+            const body = `A new version of Stellarium has been released!
+
+            **Current Version:** \`${{ steps.check-releases.outputs.current_tag }}\`
+            **Latest Version:** \`${{ steps.check-releases.outputs.latest_tag }}\`
+
+            **Action Required:**
+            1. Review [Stellarium release notes](https://github.com/Stellarium/stellarium/releases/tag/${{ steps.check-releases.outputs.latest_tag }})
+            2. Test if current patches apply to new version
+            3. Update \`config/stellarium-version.txt\` to new version
+            4. Regenerate patches if needed: \`scripts/generate-patches.sh ${{ steps.check-releases.outputs.latest_tag }}\`
+            5. Test build with new version
+            6. Create a new release after successful testing
+
+            **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`;
+
+            // Check if issue already exists for this version
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['upstream-release']
+            });
+
+            const existingIssue = issues.data.find(issue => issue.title === title);
+
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['upstream-release', 'enhancement']
+              });
+            }
+
+      - name: Close stale drift issues if all passing
+        if: steps.test-target.outputs.failed == '0' && steps.test-master.outputs.failed == '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: ['upstream-drift']
+            });
+
+            for (const issue of issues.data) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: '✅ All patches are now applying successfully. Closing this issue.'
+              });
+
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }

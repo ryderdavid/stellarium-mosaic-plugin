@@ -182,8 +182,8 @@ jobs:
       - name: Create DMG
         run: |
           cd stellarium/build
-          # Package the app bundle
-          macdeployqt Stellarium.app -dmg
+          # Package the app bundle (app is in src/ subdirectory)
+          macdeployqt src/Stellarium.app -dmg
           mv Stellarium.dmg "Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg"
 
       - name: Upload DMG to Release
@@ -224,7 +224,7 @@ jobs:
         with:
           version: '6.5.*'
           arch: win64_msvc2019_64
-          modules: 'qtmultimedia qtpositioning qtserialport qt5compat'
+          modules: 'qtmultimedia qtpositioning qtserialport qt5compat qtcharts'
 
       - name: Setup MSVC
         uses: ilammy/msvc-dev-cmd@v1

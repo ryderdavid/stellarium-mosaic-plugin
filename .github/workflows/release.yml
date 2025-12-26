@@ -106,42 +106,39 @@ jobs:
           cd stellarium
           bash ../plugin/scripts/apply-patches.sh .
 
-      - name: Download official Stellarium macOS build
-        run: |
-          cd stellarium
-          echo "Downloading official Stellarium v25.3 macOS build..."
-          curl -L https://github.com/Stellarium/stellarium/releases/download/v25.3/Stellarium-25.3-qt6-macOS.zip -o official.zip
-          unzip -q official.zip
-          ls -la Stellarium.app/Contents/Frameworks/ | head -20
-
-      - name: Build patched binary
+      - name: Build and bundle application
         run: |
           cd stellarium
           export Qt6_DIR="$(brew --prefix qt@6)/lib/cmake/Qt6"
           export PATH="$(brew --prefix ccache)/bin:$PATH"
+
+          # Configure with bundle enabled
           cmake -B build \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_PREFIX_PATH="$(brew --prefix qt@6)" \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
             -DCMAKE_C_COMPILER_LAUNCHER=ccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
-          cmake --build build/src -j 4 --target stellarium
-          echo "Built patched binary:"
-          ls -lh build/src/stellarium
 
-      - name: Replace binary and fix paths
+          # Build
+          cmake --build build -j 4
+
+          # Install to create app bundle
+          cmake --install build
+
+          # Verify bundle was created
+          ls -la build/Stellarium.app/Contents/MacOS/
+
+      - name: Bundle all dependencies with macdeployqt
         run: |
-          cd stellarium
+          cd stellarium/build
 
-          # Replace the official binary with our patched one
-          echo "=== Replacing binary with patched version ==="
-          cp build/src/stellarium Stellarium.app/Contents/MacOS/stellarium
+          # Run macdeployqt to bundle Qt frameworks
+          echo "=== Running macdeployqt ==="
+          macdeployqt Stellarium.app -verbose=2
 
-          # Use macdeployqt to fix all Qt paths in the binary (frameworks already exist from official build)
-          echo "=== Fixing Qt framework paths with macdeployqt ==="
-          macdeployqt Stellarium.app -verbose=1
-
-          # Bundle only the additional non-Qt dependencies (like md4c)
+          # Bundle additional dependencies (md4c) with dylibbundler
           echo "=== Bundling additional dependencies ==="
           dylibbundler -b \
             -x Stellarium.app/Contents/MacOS/stellarium \
@@ -151,15 +148,17 @@ jobs:
           echo "=== Final verification ==="
           echo "Frameworks count:"
           ls -1 Stellarium.app/Contents/Frameworks/ | wc -l
-          echo "Checking for md4c:"
+          echo "Sample frameworks:"
+          ls -1 Stellarium.app/Contents/Frameworks/ | head -10
+          echo "=== Checking for md4c ==="
           ls -1 Stellarium.app/Contents/Frameworks/ | grep md4c || echo "md4c not found"
-          echo "=== Binary dependencies (should ALL use @executable_path or @rpath) ==="
-          otool -L Stellarium.app/Contents/MacOS/stellarium | grep -v "/System/" | grep -v "/usr/lib/"
+          echo "=== Binary dependencies ==="
+          otool -L Stellarium.app/Contents/MacOS/stellarium | head -30
 
       - name: Create DMG
         run: |
-          cd stellarium
-          # Create DMG from the patched app bundle
+          cd stellarium/build
+          # Create DMG from the app bundle
           create-dmg \
             --volname "Stellarium Mosaic" \
             --window-pos 200 120 \
@@ -175,7 +174,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ needs.create-release.outputs.version }}
-          files: stellarium/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
+          files: stellarium/build/Stellarium-Mosaic-${{ needs.create-release.outputs.version }}-arm64.dmg
 
   build-windows-zip:
     name: Build Windows ZIP

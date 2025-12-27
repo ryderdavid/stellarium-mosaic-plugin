@@ -351,11 +351,27 @@ jobs:
           ls -la C:/stellarium-install/ || true
           ls -la C:/stellarium-install/qtstuff/ || echo "qtstuff directory not found!"
 
-          # Debug: Check windeployqt logs
-          echo "=== windeployqt log ==="
-          cat build/src/windeployqt.log || echo "No windeployqt log file"
-          echo "=== windeployqt errors ==="
-          cat build/src/windeployqt.err || echo "No windeployqt error file"
+          # If qtstuff doesn't exist, run windeployqt manually
+          if [ ! -d "C:/stellarium-install/qtstuff" ]; then
+            echo "=== Running windeployqt manually ==="
+            mkdir -p C:/stellarium-install/qtstuff
+
+            # Find windeployqt
+            WINDEPLOYQT="${Qt6_DIR}/bin/windeployqt.exe"
+            echo "windeployqt location: $WINDEPLOYQT"
+            ls -la "$WINDEPLOYQT" || echo "windeployqt not found at expected location"
+
+            # Run windeployqt
+            "$WINDEPLOYQT" \
+              --dir "C:/stellarium-install/qtstuff" \
+              --no-translations \
+              --verbose 2 \
+              --compiler-runtime \
+              "C:/stellarium-install/bin/stellarium.exe" 2>&1 || echo "windeployqt failed with exit code $?"
+
+            echo "=== qtstuff contents after windeployqt ==="
+            ls -la C:/stellarium-install/qtstuff/ || echo "Still no qtstuff!"
+          fi
 
           # Build the Inno Setup installer
           cmake --build build --target stellarium-installer

@@ -345,6 +345,18 @@ jobs:
           cd stellarium
           # Install to staging directory
           cmake --install build
+
+          # Debug: Check if qtstuff directory exists
+          echo "=== Checking install directory structure ==="
+          ls -la C:/stellarium-install/ || true
+          ls -la C:/stellarium-install/qtstuff/ || echo "qtstuff directory not found!"
+
+          # Debug: Check windeployqt logs
+          echo "=== windeployqt log ==="
+          cat build/src/windeployqt.log || echo "No windeployqt log file"
+          echo "=== windeployqt errors ==="
+          cat build/src/windeployqt.err || echo "No windeployqt error file"
+
           # Build the Inno Setup installer
           cmake --build build --target stellarium-installer
 

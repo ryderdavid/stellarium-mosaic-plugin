@@ -341,16 +341,6 @@ This plugin follows Stellarium's license (GPLv2+). See the [Stellarium license](
 
 See [Releases](../../releases) for version history.
 
-## Roadmap
-
-Future enhancements (see issues for details):
-
-- Export mosaic coordinates to file
-- Integration with telescope control (INDI/ASCOM)
-- Automatic sequence planning
-- Panel capture progress tracking
-- Filter wheel support
-
 ---
 
 **Current Stellarium Version**: `v25.3`

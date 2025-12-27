@@ -334,7 +334,7 @@ jobs:
           cd stellarium
           cmake -B build -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="${PWD}/build/install" \
+            -DCMAKE_INSTALL_PREFIX=C:/stellarium-install \
             -DCMAKE_C_COMPILER_LAUNCHER=sccache \
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build build -j 4

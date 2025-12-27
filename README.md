@@ -2,6 +2,16 @@
 
 This repository maintains the **Mosaic Planning Plugin** for Stellarium as a set of patches and overlay files that can be applied to upstream Stellarium releases. The plugin extends the Oculars plugin with mosaic planning capabilities similar to NINA's framing assistant or Telescopius's telescope simulator.
 
+**Current Release**: `upstream.25.3_mosaicplugin.0.5.0`
+
+### Platform Support
+
+| Platform | Status | Download |
+|----------|--------|----------|
+| **macOS** (Apple Silicon) | ✅ Supported | DMG installer |
+| **Windows** (x64) | ✅ Supported | EXE installer |
+| **Linux** (x86_64) | ⚠️ Build from source | AppImage planned |
+
 ## Features
 
 - **N×M Mosaic Grid**: Configure any grid size (e.g., 3×3, 5×7, etc.)
@@ -37,10 +47,10 @@ stellarium-mosaic-plugin/
 
 1. Go to [Releases](../../releases)
 2. Download for your platform:
-   - **Linux**: `Stellarium-Mosaic-*-x86_64.AppImage`
-   - **macOS**: `Stellarium-Mosaic-*-arm64.dmg`
-   - **Windows**: `Stellarium-Mosaic-*-win64.zip`
-3. Run the downloaded application
+   - **macOS**: `Stellarium-Mosaic-*-arm64.dmg` (Apple Silicon)
+   - **Windows**: `stellarium-*-qt6-win64.exe` (installer)
+   - **Linux**: Not yet available (build from source - see below)
+3. Install and run the downloaded application
 
 ### Option 2: Build from Source
 
@@ -200,26 +210,17 @@ This repository uses GitHub Actions for automated testing and releases.
 - **Triggers**: Push to main, pull requests
 - **Jobs**:
   - Validate patches apply cleanly
-  - Build on Linux (Qt5, Qt6)
-  - Build on macOS (Intel, Apple Silicon)
+  - Build on Linux (Qt6)
+  - Build on macOS (Apple Silicon)
   - Build on Windows (Qt6)
   - Run tests
-
-#### `upstream-check.yml` - Drift Detection
-- **Triggers**: Daily at 6:00 AM UTC, manual
-- **Actions**:
-  - Test patches against target version
-  - Test patches against upstream master
-  - Check for new Stellarium releases
-  - Create GitHub issues for failures
-  - Auto-close issues when resolved
 
 #### `release.yml` - Release Build
 - **Triggers**: Tag push (`v*`)
 - **Artifacts**:
-  - Linux AppImage (x86_64)
-  - macOS DMG (arm64)
-  - Windows ZIP (x64)
+  - macOS DMG (arm64, Apple Silicon)
+  - Windows Installer (.exe, x64)
+  - Linux builds: **TODO** (planned for future releases)
 
 ## Maintenance Workflow
 
@@ -319,5 +320,20 @@ Future enhancements (see issues for details):
 
 ---
 
-**Current Stellarium Version**: `v25.4`
-**Plugin Version**: See [latest release](../../releases/latest)
+**Current Stellarium Version**: `v25.3`
+**Plugin Version**: `0.5.0`
+**Release Tag**: `upstream.25.3_mosaicplugin.0.5.0`
+
+### Version Scheme
+
+This project uses a versioning scheme that tracks both the upstream Stellarium version and the plugin version:
+
+```
+upstream.<stellarium-version>_mosaicplugin.<plugin-version>
+```
+
+**Example**: `upstream.25.3_mosaicplugin.0.5.0`
+- Stellarium base version: 25.3
+- Mosaic plugin version: 0.5.0
+
+See [latest release](../../releases/latest) for downloads and full release notes.

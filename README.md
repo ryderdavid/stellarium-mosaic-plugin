@@ -107,6 +107,24 @@ Once installed:
 
 ## Development
 
+### Architecture: No Fork Required
+
+This repository uses a **patch-based approach** that works directly with upstream Stellarium:
+
+**For building/using:**
+```bash
+git clone https://github.com/Stellarium/stellarium.git  # Upstream directly
+bash apply-patches.sh stellarium                        # Apply our patches
+cd stellarium && cmake -B build && cmake --build build  # Build
+```
+
+**For development:**
+You have two options:
+1. **Work on a Stellarium fork** (easier for large changes)
+2. **Modify a local Stellarium clone directly** (simpler for small changes)
+
+Either way, you use `generate-patches.sh` to extract your changes as patch files.
+
 ### Repository Structure
 
 #### Patches (`patches/`)
@@ -131,17 +149,22 @@ New files added to Stellarium:
 
 #### `scripts/generate-patches.sh`
 
-Regenerates all patches from your fork:
+Extracts your changes as patches from a modified Stellarium directory:
 
 ```bash
 # From stellarium-mosaic-plugin directory
-bash scripts/generate-patches.sh v25.4 ../stellarium
+bash scripts/generate-patches.sh v25.4 /path/to/modified/stellarium
 ```
 
+**Prerequisites:**
+The Stellarium directory must have:
+- An `upstream` remote pointing to `Stellarium/stellarium`
+- Your changes on the `master` branch
+
 **When to use:**
-- After making changes to your fork
+- After making changes to Stellarium
 - When updating to a new Stellarium version
-- When patches fail to apply
+- When patches fail to apply and need manual fixes
 
 #### `scripts/apply-patches.sh`
 
@@ -159,26 +182,39 @@ bash scripts/apply-patches.sh /path/to/stellarium
 
 ### Updating to a New Stellarium Version
 
-1. **Check for new releases**:
-   - GitHub Actions runs daily drift checks
-   - Creates issues for new upstream releases
-
-2. **Update configuration**:
+1. **Update configuration**:
    ```bash
    echo "v25.5" > config/stellarium-version.txt
    ```
 
-3. **Regenerate patches**:
+2. **Get a Stellarium directory with your changes**:
+
+   **Option A: Using a fork**
    ```bash
    cd /path/to/your/stellarium/fork
    git fetch upstream
    git checkout master
-   git rebase upstream/v25.5  # or merge, depending on your workflow
-   cd /path/to/stellarium-mosaic-plugin
-   bash scripts/generate-patches.sh v25.5 /path/to/your/stellarium/fork
+   git rebase upstream/v25.5  # or merge
    ```
 
-4. **Test**:
+   **Option B: Modifying a fresh clone**
+   ```bash
+   git clone --branch v25.5 https://github.com/Stellarium/stellarium.git stellarium-work
+   cd stellarium-work
+   git remote add upstream https://github.com/Stellarium/stellarium.git
+   # Manually apply your changes or try to apply old patches:
+   bash /path/to/stellarium-mosaic-plugin/scripts/apply-patches.sh .
+   # Fix any conflicts, test changes
+   git add . && git commit -m "Apply mosaic plugin changes"
+   ```
+
+3. **Regenerate patches**:
+   ```bash
+   cd /path/to/stellarium-mosaic-plugin
+   bash scripts/generate-patches.sh v25.5 /path/to/stellarium-work
+   ```
+
+4. **Test the new patches**:
    ```bash
    # Apply to clean checkout
    git clone --branch v25.5 https://github.com/Stellarium/stellarium.git stellarium-test
@@ -187,16 +223,12 @@ bash scripts/apply-patches.sh /path/to/stellarium
    cmake -B build && cmake --build build
    ```
 
-5. **Commit and push**:
+5. **Commit and tag**:
    ```bash
    git add config/stellarium-version.txt patches/
    git commit -m "Update to Stellarium v25.5"
    git push
-   ```
-
-6. **Tag release**:
-   ```bash
-   git tag v1.1.0-stellarium-v25.5
+   git tag upstream.25.5_mosaicplugin.X.Y.Z
    git push --tags
    ```
 
@@ -226,28 +258,29 @@ This repository uses GitHub Actions for automated testing and releases.
 
 ### Normal Development
 
-1. Make changes in your Stellarium fork
-2. Merge to master branch
-3. Run `scripts/generate-patches.sh` to update patches
-4. Commit and push to this repository
-5. CI automatically validates
+1. Make changes to a Stellarium directory (fork or local clone)
+2. Ensure changes are committed to `master` branch
+3. Run `scripts/generate-patches.sh` to extract patches
+4. Commit patches to this repository
+5. CI automatically validates against upstream
 
 ### When Upstream Updates
 
-1. GitHub Actions creates issue for new release
-2. Review Stellarium changelog
-3. Update `config/stellarium-version.txt`
-4. Regenerate patches (may need manual fixes)
-5. Test thoroughly
-6. Tag new release
+1. Review new Stellarium release changelog
+2. Update `config/stellarium-version.txt`
+3. Update your changes for new version (rebase/merge/manual)
+4. Regenerate patches (may need manual conflict resolution)
+5. Test thoroughly with CI
+6. Tag new release: `upstream.X.Y_mosaicplugin.A.B.C`
 
-### When Patches Fail
+### When Patches Fail to Apply
 
-1. GitHub Actions creates issue with details
-2. Review failed patches
-3. Update fork with fixes
-4. Regenerate patches
-5. Push and verify CI passes
+1. Clone fresh Stellarium at target version
+2. Try to apply patches, note which ones fail
+3. Manually apply failed changes
+4. Commit fixes to `master` branch
+5. Regenerate all patches
+6. Push and verify CI passes
 
 ## Technical Details
 

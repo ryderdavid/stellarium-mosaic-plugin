@@ -53,10 +53,18 @@
       "state": "verified",
       "kind": "complete",
       "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-64b8eef7a929b2a64600bc7ba9bb1001",
+      "digest": "43aeeb937bb195ba129a06ae4907b38010f79b5ab0377172a493e6fd2339aee9",
+      "state": "verified",
+      "kind": "complete",
+      "payload_digest": "6e2b63cba617c7afcac127c6b08c7bcd9be00a0c4e4ec798d6c5f67e0dcd3ef8"
     }
   ],
   "evidence": {
-    "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c",
+    "payload_digest": "6e2b63cba617c7afcac127c6b08c7bcd9be00a0c4e4ec798d6c5f67e0dcd3ef8",
     "commands": [
       {
         "command": "python3 -m unittest discover -s tools/engineering/tests -v",

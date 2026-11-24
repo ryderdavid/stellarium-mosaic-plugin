@@ -21,3 +21,18 @@ The bootstrap SHALL preserve existing source, patch, test and release behavior w
 #### Scenario: Incomplete baseline coverage
 - **WHEN** test files exist without proven discovery and execution
 - **THEN** their presence is recorded without claiming passing tests or coverage
+
+### Requirement: Source-observed Mosaic integration boundary
+The baseline SHALL identify the six patches to root CMake and existing Oculars declarations, implementation, GUI and build registration, plus the MosaicCamera and Oculars test overlay, as source-observed integration. See `.engineering/baseline.md` for the audited source and upstream SHAs.
+
+#### Scenario: Executed pinned patch application
+- **WHEN** the existing apply script runs against isolated upstream v25.3 commit f9d9c26ac3aaea4e7d5fa9c76d9b8b87489f4bb0
+- **THEN** the audited execution checks and applies all six patches and copies the overlay, with existing whitespace warnings; this does not prove compilation or runtime correctness
+
+#### Scenario: Changed Oculars paths
+- **WHEN** reviewing existing sensor drawing and HUD paths changed by the implementation patch
+- **THEN** unchanged feature-disabled Oculars behavior remains explicitly unknown until same-SHA upstream differential regression executes
+
+#### Scenario: Existing test registration gap
+- **WHEN** examining the ENABLE_TESTING branch in patch 006 and its test overlay
+- **THEN** ADD_SUBDIRECTORY(test) is source-observed but the overlay lacks that directory's CMakeLists.txt; test build/discovery and independent geometry/persistence coverage remain unverified

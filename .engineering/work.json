@@ -21,6 +21,35 @@
       "state": "verified",
       "kind": "failure",
       "payload_digest": "8084b9f6ab488b1534f39114053528fcd7a173b2dea2e0af0e41bdf7255a05ae"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-5cfaee55f3b58ac77da219d30addec78",
+      "digest": "55c9322beea23a0a39a029de961394e7394034498b4c9dd9716f88e4222c6312",
+      "state": "verified",
+      "kind": "decision",
+      "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-a8937ca1d2c5c4a2f6923a8048c4b98f",
+      "digest": "fd14853eaa1dcb159decf78db8fc26719fbc293d07ac96438521a81f00ee0c69",
+      "state": "verified",
+      "kind": "complete",
+      "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d"
     }
-  ]
+  ],
+  "evidence": {
+    "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d",
+    "commands": [
+      {
+        "command": "python3 -m unittest discover -s tools/engineering/tests -v",
+        "result": "passed"
+      },
+      {
+        "command": "openspec validate --all --strict",
+        "result": "passed"
+      }
+    ]
+  }
 }

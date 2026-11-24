@@ -1,0 +1,79 @@
+{
+  "schema": 1,
+  "stage": "governance-bootstrap",
+  "bead": "mosaic-rbk.1",
+  "change": "bootstrap-governance",
+  "scope": "governance",
+  "base": "33a279e017267c24b099f10e6650b700620d6c10",
+  "journal": [
+    {
+      "schema": 1,
+      "event_id": "event-bfd09c9c84332f59c770373ef6c1c9f0",
+      "digest": "317660c59f6945a8d11a5b2aec5436692a8ea0a1f26e6e69918ec692c36299c5",
+      "state": "verified",
+      "kind": "start",
+      "payload_digest": "39a265933fc8955ece8a40e037fd199d3a3f4e241a7eb5424ba1e575a67a60e1"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-917c03fc9e72cffe0ddb7bb456d6e1f3",
+      "digest": "88aa952d18b0cde276ce171bbe5c8391337fa61d52df5ccb98b80be3dad52bff",
+      "state": "verified",
+      "kind": "failure",
+      "payload_digest": "8084b9f6ab488b1534f39114053528fcd7a173b2dea2e0af0e41bdf7255a05ae"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-5cfaee55f3b58ac77da219d30addec78",
+      "digest": "55c9322beea23a0a39a029de961394e7394034498b4c9dd9716f88e4222c6312",
+      "state": "verified",
+      "kind": "decision",
+      "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-a8937ca1d2c5c4a2f6923a8048c4b98f",
+      "digest": "fd14853eaa1dcb159decf78db8fc26719fbc293d07ac96438521a81f00ee0c69",
+      "state": "verified",
+      "kind": "complete",
+      "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-572b7d151e64ab14a953a3423296bb73",
+      "digest": "075f3a9ce13840ec61b20125a5de6f55e7c98218d6556367a518deaa0d0b94dd",
+      "state": "verified",
+      "kind": "failure",
+      "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-26c0ac3087d9b1a3e694018f6c21c586",
+      "digest": "918c438faac2208bf0041ec4502b2373395b00529eb879864ec26ad454b57157",
+      "state": "verified",
+      "kind": "complete",
+      "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-64b8eef7a929b2a64600bc7ba9bb1001",
+      "digest": "43aeeb937bb195ba129a06ae4907b38010f79b5ab0377172a493e6fd2339aee9",
+      "state": "verified",
+      "kind": "complete",
+      "payload_digest": "6e2b63cba617c7afcac127c6b08c7bcd9be00a0c4e4ec798d6c5f67e0dcd3ef8"
+    }
+  ],
+  "evidence": {
+    "payload_digest": "6e2b63cba617c7afcac127c6b08c7bcd9be00a0c4e4ec798d6c5f67e0dcd3ef8",
+    "commands": [
+      {
+        "command": "python3 -m unittest discover -s tools/engineering/tests -v",
+        "result": "passed"
+      },
+      {
+        "command": "openspec validate --all --strict",
+        "result": "passed"
+      }
+    ]
+  }
+}

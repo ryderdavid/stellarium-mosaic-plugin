@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "repo": "ryderdavid/stellarium-mosaic-plugin",
+  "bead_prefix": "mosaic",
+  "openspec": "1.15.0",
+  "beads": "1.2.2"
+}

@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "stage": "governance-bootstrap",
+  "bead": "mosaic-rbk.1",
+  "change": "bootstrap-governance",
+  "scope": "governance",
+  "base": "33a279e017267c24b099f10e6650b700620d6c10",
+  "journal": [
+    {
+      "schema": 1,
+      "event_id": "event-bfd09c9c84332f59c770373ef6c1c9f0",
+      "digest": "317660c59f6945a8d11a5b2aec5436692a8ea0a1f26e6e69918ec692c36299c5",
+      "state": "verified",
+      "kind": "start",
+      "payload_digest": "39a265933fc8955ece8a40e037fd199d3a3f4e241a7eb5424ba1e575a67a60e1"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-917c03fc9e72cffe0ddb7bb456d6e1f3",
+      "digest": "88aa952d18b0cde276ce171bbe5c8391337fa61d52df5ccb98b80be3dad52bff",
+      "state": "verified",
+      "kind": "failure",
+      "payload_digest": "8084b9f6ab488b1534f39114053528fcd7a173b2dea2e0af0e41bdf7255a05ae"
+    }
+  ]
+}

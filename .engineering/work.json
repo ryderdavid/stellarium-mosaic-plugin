@@ -37,10 +37,26 @@
       "state": "verified",
       "kind": "complete",
       "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-572b7d151e64ab14a953a3423296bb73",
+      "digest": "075f3a9ce13840ec61b20125a5de6f55e7c98218d6556367a518deaa0d0b94dd",
+      "state": "verified",
+      "kind": "failure",
+      "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c"
+    },
+    {
+      "schema": 1,
+      "event_id": "event-26c0ac3087d9b1a3e694018f6c21c586",
+      "digest": "918c438faac2208bf0041ec4502b2373395b00529eb879864ec26ad454b57157",
+      "state": "verified",
+      "kind": "complete",
+      "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c"
     }
   ],
   "evidence": {
-    "payload_digest": "ebf009e8ad102b8e92d560e5cf700318b63e8013f9282c7a438aa4340509b30d",
+    "payload_digest": "42e9a61ef4d8f6c97c2acb5b5d41c0dcfb334d67314b4266b9f745c0e316c02c",
     "commands": [
       {
         "command": "python3 -m unittest discover -s tools/engineering/tests -v",
